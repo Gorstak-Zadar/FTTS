@@ -254,6 +254,7 @@
 
     function stepMinute() {
       if (state.finished) return snapshot();
+      var before = state.events.length;
       state.minute++;
 
       // Decrement active penalties.
@@ -274,6 +275,9 @@
         state.events.push({ minute: 90, side: null, type: 'ft',
           text: 'Full time: Team A ' + state.score.A + ' – ' + state.score.B + ' Team B' });
       }
+      // Stash exactly the events produced this minute so a visualizer can
+      // choreograph them without diffing the whole list.
+      state.newEvents = state.events.slice(before);
       return snapshot();
     }
 
@@ -294,6 +298,7 @@
         finished: state.finished,
         effective: currentEffective(),
         lastEvents: state.events.slice(-40),
+        newEvents: (state.newEvents || []).slice(),
         seed: seed,
         mirror: mirror
       };

@@ -60,12 +60,13 @@
 
       <div id="timeline"></div>
       <p class="hint">
-        Team A attacks right, Team B attacks left. Dots show position code,
-        role (duty) and — per your guide's rule 8 tables — each player's
-        resolved responsibility. Hit <strong>Play match</strong> to simulate
-        90 minutes: mentality shifts by phase (rule 6), attacks favour your
-        strong spot (rule 5), and rule 7 modifiers apply. The scoreline is a
-        heuristic on top of those guide-defined inputs; same seed = same match.
+        Team A attacks right, Team B attacks left. Before kickoff the pitch shows
+        each player's position, role (duty) and — per your guide's rule 8 tables —
+        resolved responsibility. Hit <strong>Play match</strong> for an animated
+        90 minutes: players move, the ball is passed and shot, and set pieces
+        (throw-ins, corners, goal kicks) play out. The result is decided by the
+        guide-based engine (rule 6 phase mentality, rule 5 spots, rule 7
+        modifiers); the animation just plays it out. Same seed = same match.
       </p>
     </section>
 
@@ -80,6 +81,7 @@
   <script src="js/engine.js"></script>
   <script src="js/match.js"></script>
   <script src="js/pitch.js"></script>
+  <script src="js/animator.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

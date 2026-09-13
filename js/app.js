@@ -259,29 +259,44 @@
     lastAnalA = analA;
     lastAnalB = analB;
 
-    // If tactics changed while a match is idle/finished (not actively playing),
-    // drop the stale sim so the next Play rebuilds from the new settings.
-    if (!match.timer && match.sim) {
-      match.sim = null; match.snap = null;
+    // If tactics changed while a match exists (running, paused or finished),
+    // tear it down so the next Play rebuilds from the new settings, and return
+    // to the static tactical view.
+    if (match.started || match.anim || match.sim) {
+      if (match.anim) match.anim.pause();
+      stopPoll();
+      match.anim = null; match.sim = null; match.snap = null; match.started = false;
       var sc = document.getElementById('sb-score');
       if (sc) { sc.textContent = '0 – 0'; document.getElementById('sb-clock').textContent = "0'"; }
       var ms = document.getElementById('match-stats'); if (ms) ms.innerHTML = '';
       var fd = document.getElementById('feed'); if (fd) fd.innerHTML = '';
+      var ea = document.getElementById('sb-eff-a'); if (ea) ea.textContent = teamA.mentality;
+      var eb = document.getElementById('sb-eff-b'); if (eb) eb.textContent = teamB.mentality;
       setControls(false, false);
     }
 
-    // Render pitch. If a match is running, sit the shape by effective mentality.
+    // Static tactical view (shown when no match is animating).
     var showResp = document.getElementById('toggleResp').checked;
-    var effA = match.snap ? match.snap.effective.A : null;
-    var effB = match.snap ? match.snap.effective.B : null;
-    PITCH.render(canvas, teamA, analA, teamB, analB, showResp, effA, effB);
+    PITCH.render(canvas, teamA, analA, teamB, analB, showResp, null, null);
   }
 
   // ==========================================================================
   // Match simulation controls
   // ==========================================================================
-  var match = { sim: null, timer: null, snap: null };
+  // match holds the animator + underlying sim + the latest snapshot painted.
+  var match = { anim: null, sim: null, snap: null, poll: null, started: false };
   var lastAnalA = null, lastAnalB = null;
+
+  // Speed selector value -> { secPerMin: sim-seconds per match-minute, timeScale }.
+  // Lower secPerMin = faster match. Instant (0) skips animation entirely.
+  function speedMap(v) {
+    switch (v) {
+      case 400: return { secPerMin: 2.4, timeScale: 1 };   // Slow
+      case 150: return { secPerMin: 1.2, timeScale: 1 };   // Normal
+      case 40:  return { secPerMin: 0.45, timeScale: 1 };  // Fast
+      default:  return { secPerMin: 1.2, timeScale: 1 };
+    }
+  }
 
   function fmtEvent(ev) {
     var side = ev.side ? ('team-' + ev.side.toLowerCase()) : '';
@@ -290,83 +305,104 @@
       (ev.minute ? ev.minute + "'" : '') + '</span> ' + ev.text + '</div>';
   }
 
-  function paintMatch() {
-    var s = match.snap;
+  // Paint scoreboard/stats/feed from a sim snapshot (authoritative numbers).
+  function paintSnap(s) {
     if (!s) return;
     document.getElementById('sb-score').textContent = s.score.A + ' – ' + s.score.B;
     document.getElementById('sb-clock').textContent = s.minute + "'";
     document.getElementById('sb-eff-a').textContent = s.effective.A;
     document.getElementById('sb-eff-b').textContent = s.effective.B;
-
     document.getElementById('match-stats').innerHTML =
       '<span>Shots ' + s.shots.A + '–' + s.shots.B + '</span>' +
       '<span>Cards ' + s.cards.A + '–' + s.cards.B + '</span>' +
       '<span>Injuries ' + s.injuries.A + '–' + s.injuries.B + '</span>' +
       (s.mirror ? '<span class="mirror">mirror match</span>' : '') +
       '<span class="seed">seed ' + s.seed + '</span>';
-
-    var feed = document.getElementById('feed');
-    feed.innerHTML = s.lastEvents.slice().reverse().map(fmtEvent).join('');
-
-    // Re-lay the shape by the current effective mentality.
-    var showResp = document.getElementById('toggleResp').checked;
-    PITCH.render(canvas, teamA, lastAnalA, teamB, lastAnalB, showResp,
-      s.effective.A, s.effective.B);
+    document.getElementById('feed').innerHTML =
+      s.lastEvents.slice().reverse().map(fmtEvent).join('');
   }
 
-  function stopTimer() {
-    if (match.timer) { clearInterval(match.timer); match.timer = null; }
-  }
+  function stopPoll() { if (match.poll) { clearInterval(match.poll); match.poll = null; } }
 
   function setControls(running, finished) {
     document.getElementById('btnPlay').disabled = running || finished;
     document.getElementById('btnPause').disabled = !running;
-    document.getElementById('btnReset').disabled = !(running || finished || match.snap);
+    document.getElementById('btnReset').disabled = !(running || finished || match.started);
+  }
+
+  function buildSim() {
+    var seedInput = document.getElementById('matchSeed').value;
+    var opts = { badWeather: options.badWeather };
+    if (seedInput !== '') opts.seed = parseInt(seedInput, 10) >>> 0;
+    return MATCH.create(teamA, teamB, lastAnalA, lastAnalB, opts);
   }
 
   function startMatch() {
     try {
-      if (!MATCH) { showErr('MATCH engine not loaded (js/match.js).'); return; }
-      if (!lastAnalA || !lastAnalB) { refresh(false); }
-      // Build a fresh sim from current configs/analyses.
-      var seedInput = document.getElementById('matchSeed').value;
-      var opts = { badWeather: options.badWeather };
-      if (seedInput !== '') opts.seed = parseInt(seedInput, 10) >>> 0;
+      if (!MATCH || !global.ANIMATOR) { showErr('Match engine not loaded.'); return; }
+      if (!lastAnalA || !lastAnalB) refresh(false);
 
-      if (!match.sim || (match.snap && match.snap.finished)) {
-        match.sim = MATCH.create(teamA, teamB, lastAnalA, lastAnalB, opts);
-        match.snap = match.sim.snapshot();
-      }
-      var speed = parseInt(document.getElementById('matchSpeed').value, 10);
+      var v = parseInt(document.getElementById('matchSpeed').value, 10);
 
-      if (speed === 0) {
-        match.snap = match.sim.runToEnd();
-        paintMatch();
+      // Instant: run the sim to the end, show final numbers, no animation.
+      if (v === 0) {
+        var simI = buildSim();
+        var snap = simI.runToEnd();
+        paintSnap(snap);
+        match.sim = simI; match.snap = snap; match.started = true; match.anim = null;
         setControls(false, true);
         return;
       }
 
+      // Resume an existing paused animation.
+      if (match.anim && !match.anim.isFinished() && match.started) {
+        match.anim.resume();
+        startPoll();
+        setControls(true, false);
+        return;
+      }
+
+      // Fresh animated match.
+      match.sim = buildSim();
+      var sp = speedMap(v);
+      match.anim = global.ANIMATOR.create(canvas, teamA, teamB, lastAnalA, lastAnalB,
+        match.sim, { secondsPerMinute: sp.secPerMin, timeScale: sp.timeScale });
+      match.anim.on('end', function (s) {
+        match.snap = s; paintSnap(s); stopPoll(); setControls(false, true);
+      });
+      match.started = true;
+      match.anim.start();
+      startPoll();
       setControls(true, false);
-      stopTimer();
-      match.timer = setInterval(function () {
-        try {
-          match.snap = match.sim.stepMinute();
-          paintMatch();
-          if (match.snap.finished) { stopTimer(); setControls(false, true); }
-        } catch (err) { stopTimer(); showErr('step: ' + (err && err.message)); }
-      }, speed);
     } catch (err) {
       showErr('startMatch: ' + (err && err.message ? err.message : err));
     }
   }
 
-  function pauseMatch() { stopTimer(); setControls(false, false); }
+  // Poll the animator's authoritative snapshot to refresh the HUD.
+  function startPoll() {
+    stopPoll();
+    match.poll = setInterval(function () {
+      if (!match.anim) return;
+      match.snap = match.anim.snapshot();
+      paintSnap(match.snap);
+    }, 120);
+  }
+
+  function pauseMatch() {
+    if (match.anim) match.anim.pause();
+    stopPoll();
+    setControls(false, match.anim ? match.anim.isFinished() : false);
+  }
 
   function resetMatch() {
-    stopTimer();
-    match.sim = null; match.snap = null;
+    if (match.anim) match.anim.pause();
+    stopPoll();
+    match.anim = null; match.sim = null; match.snap = null; match.started = false;
     document.getElementById('sb-score').textContent = '0 – 0';
     document.getElementById('sb-clock').textContent = "0'";
+    document.getElementById('sb-eff-a').textContent = teamA.mentality;
+    document.getElementById('sb-eff-b').textContent = teamB.mentality;
     document.getElementById('match-stats').innerHTML = '';
     document.getElementById('feed').innerHTML = '';
     setControls(false, false);
@@ -391,8 +427,12 @@
     document.getElementById('btnPause').addEventListener('click', pauseMatch);
     document.getElementById('btnReset').addEventListener('click', resetMatch);
     document.getElementById('matchSpeed').addEventListener('change', function () {
-      // If playing, apply the new speed immediately.
-      if (match.timer) { pauseMatch(); startMatch(); }
+      // Apply the new speed live to a running/paused animation.
+      var v = parseInt(document.getElementById('matchSpeed').value, 10);
+      if (match.anim && v !== 0) {
+        var sp = speedMap(v);
+        match.anim.setSpeed(sp.secPerMin, sp.timeScale);
+      }
     });
 
     // Mentality timeline (shared, rule 6).
