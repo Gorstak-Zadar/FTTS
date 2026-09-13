@@ -65,7 +65,7 @@ body {
   grid-template-columns: 350px 1fr 350px;
   gap: 1rem;
   padding: 1.5rem;
-  max-width: 1500px;
+  max-width: 1680px;
   margin: 0 auto;
   align-items: start;
 }
@@ -160,15 +160,16 @@ select:focus { border-color: var(--accent); }
 .center { display: grid; gap: 1rem; justify-items: center; }
 #pitch {
   width: 100%;
-  max-width: 620px;
+  max-width: 900px;
   height: auto;
+  aspect-ratio: 900 / 600;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: #14532d;
 }
-.hint { font-size: 0.8rem; color: var(--text-dim); max-width: 620px; text-align: center; }
+.hint { font-size: 0.8rem; color: var(--text-dim); max-width: 900px; text-align: center; }
 
-.timeline { width: 100%; max-width: 620px; }
+.timeline { width: 100%; max-width: 900px; }
 .tl-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.35rem; }
 .tl-cell {
   border-radius: 8px;
@@ -193,7 +194,7 @@ select:focus { border-color: var(--accent); }
 /* ---- match simulation UI ---- */
 .scoreboard {
   width: 100%;
-  max-width: 620px;
+  max-width: 900px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
@@ -224,7 +225,7 @@ select:focus { border-color: var(--accent); }
 
 .match-controls {
   width: 100%;
-  max-width: 620px;
+  max-width: 900px;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -256,7 +257,7 @@ select:focus { border-color: var(--accent); }
 }
 
 .match-stats {
-  width: 100%; max-width: 620px;
+  width: 100%; max-width: 900px;
   display: flex; flex-wrap: wrap; gap: 0.75rem;
   font-size: 0.78rem; color: var(--text-dim);
 }
@@ -264,7 +265,7 @@ select:focus { border-color: var(--accent); }
 .match-stats .seed { margin-left: auto; opacity: 0.7; }
 
 .feed {
-  width: 100%; max-width: 620px;
+  width: 100%; max-width: 900px;
   max-height: 190px; overflow-y: auto;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 12px; padding: 0.5rem 0.75rem;
