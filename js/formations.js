@@ -53,7 +53,19 @@
       ]
     },
     {
+      // Standard 4-2-3-1: the double pivot are central midfielders (MC) sitting
+      // deep, NOT dedicated defensive midfielders. Defenders (rule 2) = 4.
       name: '4-2-3-1', common: true,
+      slots: [
+        S('DL','D','L'), S('DC','D','CL'), S('DC','D','CR'), S('DR','D','R'),
+        S('MC','M','CL'), S('MC','M','CR'),
+        S('AML','AM','L'), S('AMC','AM','C'), S('AMR','AM','R'),
+        S('ST','ST','C')
+      ]
+    },
+    {
+      // Deep variant: the double pivot are dedicated DMs. Defenders (rule 2) = 6.
+      name: '4-2-3-1 DM', common: true,
       slots: [
         S('DL','D','L'), S('DC','D','CL'), S('DC','D','CR'), S('DR','D','R'),
         S('DM','DM','CL'), S('DM','DM','CR'),
