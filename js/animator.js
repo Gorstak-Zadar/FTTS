@@ -56,8 +56,24 @@
   function create(canvas, teamA, teamB, analA, analB, sim, opts) {
     opts = opts || {};
     var ctx = canvas.getContext('2d');
-    var W = canvas.width, H = canvas.height, M = 28;   // pitch margin px
+    // Logical coordinate space (independent of physical resolution).
+    var LOGICAL_W = 900, LOGICAL_H = 600;
+    var W = LOGICAL_W, H = LOGICAL_H, M = 28;   // pitch margin px (logical)
     var pw = W - 2 * M, ph = H - 2 * M;
+
+    // Scale the backing store to device pixels so everything stays crisp.
+    function setupHiDPI() {
+      var rect = canvas.getBoundingClientRect();
+      var cssW = rect.width || LOGICAL_W, cssH = rect.height || LOGICAL_H;
+      var dpr = global.devicePixelRatio || 1;
+      var needW = Math.round(cssW * dpr), needH = Math.round(cssH * dpr);
+      if (canvas.width !== needW || canvas.height !== needH) {
+        canvas.width = needW; canvas.height = needH;
+      }
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(canvas.width / LOGICAL_W, canvas.height / LOGICAL_H);
+    }
+    setupHiDPI();
 
     // Normalized -> pixels. x length axis, y width axis.
     function px(nx) { return M + nx * pw; }
@@ -526,10 +542,10 @@
     }
 
     function drawPlayer(p, color) {
-      var x = px(p.x), y = py(p.y), r = 9;
+      var x = px(p.x), y = py(p.y), r = 11;
       ctx.beginPath(); ctx.fillStyle = color; ctx.arc(x, y, r, 0, 7); ctx.fill();
-      ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.stroke();
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 8px system-ui,sans-serif';
+      ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px system-ui,sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(p.pos, x, y);
     }

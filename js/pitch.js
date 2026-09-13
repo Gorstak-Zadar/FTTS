@@ -147,33 +147,75 @@
   }
 
   function drawPlayer(ctx, pl, color, showResp) {
-    var r = 13;
+    var r = 12;
+    // Compose the label lines first so we can draw a readable dark backdrop.
+    var line1 = shortRole(pl.role) + ' (' + dutyShort(pl.duty) + ')';
+    var respLines = [];
+    if (showResp && pl.responsibility) {
+      respLines = wrapLines(ctx, pl.responsibility, 118, '11px system-ui, sans-serif');
+    }
+
+    // Text backdrop (rounded dark panel) so labels are crisp over the pitch.
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    var labelTop = pl.y + r + 4;
+    var boxLines = 1 + respLines.length;
+    var lineH = 13;
+    var boxH = boxLines * lineH + 6;
+    var boxW = 128;
+    ctx.fillStyle = 'rgba(8,12,20,0.60)';
+    roundRect(ctx, pl.x - boxW / 2, labelTop - 3, boxW, boxH, 5);
+    ctx.fill();
+
+    // Player dot
     ctx.beginPath();
     ctx.fillStyle = color;
     ctx.arc(pl.x, pl.y, r, 0, Math.PI * 2);
     ctx.fill();
     ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
     ctx.stroke();
 
     // Position code inside the dot
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 9px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 11px system-ui, sans-serif';
     ctx.fillText(pl.pos, pl.x, pl.y);
 
-    // Role + duty just below
-    ctx.font = '9px system-ui, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    ctx.fillText(shortRole(pl.role) + ' (' + dutyShort(pl.duty) + ')', pl.x, pl.y + r + 8);
+    // Role + duty (bright)
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(line1, pl.x, labelTop + lineH / 2);
 
-    // Responsibility (small, wrapped) below that
-    if (showResp && pl.responsibility) {
-      ctx.font = '8px system-ui, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      wrapText(ctx, pl.responsibility, pl.x, pl.y + r + 19, 92, 9);
+    // Responsibility lines
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(226,232,240,0.95)';
+    for (var i = 0; i < respLines.length; i++) {
+      ctx.fillText(respLines[i], pl.x, labelTop + lineH * (i + 1) + lineH / 2);
     }
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // Split text into wrapped lines (no drawing) for a given max width + font.
+  function wrapLines(ctx, text, maxWidth, font) {
+    ctx.font = font;
+    var words = text.split(' ');
+    var line = '', lines = [];
+    for (var i = 0; i < words.length; i++) {
+      var test = line ? line + ' ' + words[i] : words[i];
+      if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = words[i]; }
+      else line = test;
+    }
+    if (line) lines.push(line);
+    return lines;
   }
 
   function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
@@ -195,9 +237,32 @@
     }
   }
 
+  // Logical drawing size (coordinate space). The backing bitmap is scaled up
+  // to the element's on-screen size * devicePixelRatio so text stays crisp.
+  var LOGICAL_W = 900, LOGICAL_H = 600;
+
+  function setupHiDPI(canvas, ctx) {
+    var rect = canvas.getBoundingClientRect();
+    var cssW = rect.width || LOGICAL_W;
+    var cssH = rect.height || LOGICAL_H;
+    var dpr = global.devicePixelRatio || 1;
+    // Backing store matches the displayed size at device resolution.
+    var needW = Math.round(cssW * dpr);
+    var needH = Math.round(cssH * dpr);
+    if (canvas.width !== needW || canvas.height !== needH) {
+      canvas.width = needW;
+      canvas.height = needH;
+    }
+    // Reset any prior transform, then scale so we can draw in LOGICAL_W x
+    // LOGICAL_H coordinates regardless of the physical resolution.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(canvas.width / LOGICAL_W, canvas.height / LOGICAL_H);
+  }
+
   function render(canvas, teamA, analA, teamB, analB, showResp, effA, effB) {
     var ctx = canvas.getContext('2d');
-    var W = canvas.width, H = canvas.height;
+    setupHiDPI(canvas, ctx);
+    var W = LOGICAL_W, H = LOGICAL_H;
     var margin = 28;
 
     drawPitch(ctx, W, H, margin);

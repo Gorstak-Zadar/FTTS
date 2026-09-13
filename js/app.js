@@ -443,6 +443,15 @@
       }
     });
 
+    // Re-render the static view on resize so HiDPI stays crisp. (During an
+    // animated match the animator owns the canvas and re-scales itself.)
+    var resizeTimer = null;
+    global.addEventListener('resize', function () {
+      if (match.anim) return;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () { refresh(false); }, 150);
+    });
+
     // Mentality timeline (shared, rule 6).
     document.getElementById('timeline').appendChild(buildTimeline());
 
