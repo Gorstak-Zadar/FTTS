@@ -57,7 +57,10 @@
   eq('fluid/ctrl SK', resp('fluid', 'control', { pos: 'GK', role: 'Sweeper Keeper', duty: 'Support', lone: true }), 'Initiate Attacks');
   eq('flex/def WB defend', resp('flexible', 'defensive', { pos: 'WBL', role: 'Wing Back', duty: 'Defend', lone: true }), 'Restrict Space Aggressively');
   eq('flex/def WB support', resp('flexible', 'defensive', { pos: 'WBL', role: 'Wing Back', duty: 'Support', lone: true }), 'Disrupt Attacks Quickly');
-  eq('struct/att MC', resp('structured', 'attacking', { pos: 'MC', role: 'Central Midfielder', duty: 'Support', lone: true }), 'Spearhead Attacking Moves from the Hole');
+  // MC on Attack duty gets the position line (no duty override for Attack here).
+  eq('struct/att MC(A)', resp('structured', 'attacking', { pos: 'MC', role: 'Central Midfielder', duty: 'Attack', lone: true }), 'Spearhead Attacking Moves from the Hole');
+  // MC on Support duty correctly takes the "Support Duty (All Roles)" override.
+  eq('struct/att MC(S)', resp('structured', 'attacking', { pos: 'MC', role: 'Central Midfielder', duty: 'Support', lone: true }), 'Create Chances');
   eq('highly/overload AMC', resp('highly structured', 'overload', { pos: 'AMC', role: 'Attacking Midfielder', duty: 'Attack', lone: true }), 'Draw Off Defenders');
   // Formations
   var names = FORMATIONS.all.map(function (f) { return f.name; });
