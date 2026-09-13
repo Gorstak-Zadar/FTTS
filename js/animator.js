@@ -127,32 +127,51 @@
     }
 
     // Assign each player a target for this frame based on possession + ball.
+    // Key goals: keep the team's WIDTH (players hold their lane) so play can go
+    // out wide; only the carrier and the nearest presser truly chase the ball.
     function computeTargets(dt) {
       ['A', 'B'].forEach(function (side) {
         var attacking = (side === possession);
         var push = pushFor(side) * (attacking ? 1 : 0.6);
+        var presser = nearestToBall(other(possession)); // used by defending side
         players[side].forEach(function (p) {
           if (p.pos === 'GK') {
-            // Keeper hugs own goal, tracks ball laterally a little.
             p.tx = ownGoalX(side) + (side === 'A' ? 0.03 : -0.03);
-            p.ty = clamp(lerp(0.5, ball.y, 0.35), 0.32, 0.68);
+            p.ty = clamp(lerp(0.5, ball.y, 0.30), 0.34, 0.66);
             return;
           }
           // Base anchor shifted by mentality push (toward attacking goal).
           var ax = p.bx + (side === 'A' ? push : -push);
-          var ay = p.by;
-          // Ball attraction: nearby players converge; the carrier chases ball.
-          var toBall = dist(p.x, p.y, ball.x, ball.y);
-          var pull = attacking ? 0.18 : 0.32;   // defenders press harder
-          if (p === carrier) { ax = ball.x; ay = ball.y; }
-          else if (toBall < 0.22) {
-            ax = lerp(ax, ball.x, pull);
-            ay = lerp(ay, ball.y, pull);
+          var ay = p.by;   // hold your lane by default -> preserves width
+
+          if (p === carrier) {
+            // Carrier is at the ball.
+            ax = ball.x; ay = ball.y;
+          } else if (!attacking && p === presser) {
+            // Only the designated presser closes the ball down.
+            ax = ball.x; ay = ball.y;
+          } else {
+            // Off-ball: drift only slightly toward the ball's third for shape,
+            // but KEEP your lane so wings stay wide. Wide players hold width.
+            var isWide = (p.by < 0.28 || p.by > 0.72);
+            var lateralPull = attacking
+              ? (isWide ? 0.02 : 0.08)     // wide players keep width
+              : (isWide ? 0.06 : 0.14);    // defenders tuck in a bit more
+            ay = lerp(ay, ball.y, lateralPull);
+            // Attackers make forward runs relative to ball advancement.
+            if (attacking) {
+              var ballFwd = side === 'A' ? ball.x : (1 - ball.x);
+              var mine = side === 'A' ? ax : (1 - ax);
+              if (p.band === 'ST' || p.band === 'AM') {
+                mine = Math.max(mine, ballFwd + 0.08);
+              } else if (p.band === 'M' || p.band === 'DM') {
+                mine = Math.max(mine, ballFwd - 0.06);
+              }
+              ax = side === 'A' ? mine : (1 - mine);
+            }
           }
-          // Shift laterally toward ball side for compactness.
-          ay = lerp(ay, ball.y, attacking ? 0.10 : 0.18);
           p.tx = clamp(ax, 0.02, 0.98);
-          p.ty = clamp(ay, 0.04, 0.96);
+          p.ty = clamp(ay, 0.05, 0.95);
         });
       });
     }
@@ -207,35 +226,70 @@
 
       actionTimer -= dt;
       if (actionTimer > 0) return;
-      actionTimer = 0.5 + Math.random() * 0.7;   // decide again periodically
+      actionTimer = 0.45 + Math.random() * 0.6;   // decide again periodically
 
       // Pressed? If a defender is very close, maybe lose possession.
       var presser = nearestToBall(other(possession));
       if (presser && dist(presser.x, presser.y, ball.x, ball.y) < 0.045) {
-        if (Math.random() < 0.5) { turnover(); return; }
+        if (Math.random() < 0.45) { turnover(); return; }
       }
 
-      // Choose: pass forward to a teammate closer to goal, or advance.
-      var gx = goalX(possession);
+      function fwd(p) { return possession === 'A' ? p.x : (1 - p.x); }
       var mates = players[possession].filter(function (p) { return p !== carrier && p.pos !== 'GK'; });
-      // Prefer a mate ahead of the ball toward goal.
-      mates.sort(function (a, b) {
-        var fa = possession === 'A' ? a.x : (1 - a.x);
-        var fb = possession === 'A' ? b.x : (1 - b.x);
-        return fb - fa;
-      });
-      var target = mates[Math.floor(Math.random() * Math.min(3, mates.length))] || carrier;
+      var carrierFwd = fwd(carrier);
+      var carrierWide = (carrier.by < 0.28 || carrier.by > 0.72);
 
-      var fwdCarrier = possession === 'A' ? carrier.x : (1 - carrier.x);
-      if (fwdCarrier > 0.72 && Math.random() < 0.4) {
-        // Close to goal: take a speculative pot shot toward goal mouth.
+      // Score each mate as a pass option. Reward: progress toward goal, being
+      // open (space from nearest opponent), and — crucially — using the WINGS.
+      var scored = mates.map(function (p) {
+        var progress = fwd(p) - carrierFwd;             // + = ahead of ball
+        var opp = nearestOpp(p);
+        var space = opp ? dist(p.x, p.y, opp.x, opp.y) : 0.3;
+        var wide = (p.by < 0.28 || p.by > 0.72) ? 1 : 0;
+        // Switch of play: reward a big lateral change now and then.
+        var lateral = Math.abs(p.y - carrier.y);
+        var s = progress * 1.4 + space * 1.2
+              + wide * 0.35                              // bias toward wingers
+              + (carrierWide ? 0 : lateral * 0.5)        // switch out to a wing
+              + Math.random() * 0.5;                     // variety
+        return { p: p, s: s, progress: progress };
+      }).sort(function (a, b) { return b.s - a.s; });
+
+      var choice = scored[0];
+      var target = choice ? choice.p : carrier;
+
+      // Shoot only when close AND fairly central (realistic shot locations).
+      var central = Math.abs(carrier.y - 0.5) < 0.18;
+      if (carrierFwd > 0.80 && central && Math.random() < 0.25) {
         shootAtGoal();
-      } else {
-        // Pass.
-        carrier = null;
-        kickBall(target.x, target.y, 0.9 + Math.random() * 0.4);
-        pendingReceiver = target;
+        return;
       }
+
+      // Occasionally the carrier drives forward a step instead of passing.
+      if (choice && choice.progress < 0.02 && Math.random() < 0.35) {
+        var nx = possession === 'A' ? Math.min(0.96, carrier.x + 0.10)
+                                    : Math.max(0.04, carrier.x - 0.10);
+        pendingReceiver = carrier;
+        kickBall(nx, carrier.y + (Math.random() - 0.5) * 0.06, 0.8);
+        carrier = null;
+        return;
+      }
+
+      // Pass to the chosen target.
+      carrier = null;
+      var passSpeed = 0.9 + Math.random() * 0.5;
+      kickBall(target.x, target.y, passSpeed);
+      pendingReceiver = target;
+    }
+
+    function nearestOpp(p) {
+      var opp = other(p.side || possession);
+      var best = null, bd = 1e9;
+      players[opp].forEach(function (o) {
+        var d = dist(p.x, p.y, o.x, o.y);
+        if (d < bd) { bd = d; best = o; }
+      });
+      return best;
     }
 
     var pendingReceiver = null;

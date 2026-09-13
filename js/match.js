@@ -172,6 +172,9 @@
     // Card/injury temporary penalty.
     if (state.penaltyMinutes[att.home ? 'A' : 'B'] > 0) shots *= (1 - TUNING.cardOutputPenalty);
     if (shots < 0) shots = 0;
+    // Realism clamp: no single minute should exceed ~0.30 shot probability, so
+    // stacked aggressive modifiers can't produce absurd shot counts.
+    if (shots > 0.30) shots = 0.30;
 
     // ---- conversion (chance quality/finishing) ----
     var conv = TUNING.baseConversion;
@@ -183,7 +186,9 @@
     if (att.fluidLvl <= FLUID['structured']) conv -= TUNING.structuredDecisionPenalty;
     // Shape edge also lifts quality a little.
     conv += (att.attackers - def.defenders) * 0.004;
-    if (conv < 0.01) conv = 0.01;
+    // Realism clamp: per-shot conversion stays in a believable band.
+    if (conv < 0.03) conv = 0.03;
+    if (conv > 0.20) conv = 0.20;
 
     return { shots: shots, conversion: conv, effLvl: eLvl };
   }
