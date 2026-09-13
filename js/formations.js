@@ -268,13 +268,20 @@
 
   // Seed with common (hand-authored) formations.
   RAW.forEach(function (f) {
-    var defCount = f.slots.filter(function (s) {
+    // defs = rule-2 defender count (includes DM). backline = players on the
+    // actual back line (D band only), used for DROPDOWN GROUPING so a 3-at-the
+    // -back shape with a DM is still grouped under "3 at the back".
+    var defs = f.slots.filter(function (s) {
       return ['DL','DC','DR','WBL','WBR','DM'].indexOf(s.pos) !== -1;
+    }).length;
+    var backline = f.slots.filter(function (s) {
+      return s.band === 'D';
     }).length;
     var entry = {
       name: f.name,
       common: !!f.common,
-      defs: defCount,
+      defs: defs,
+      backline: backline,
       slots: [GK].concat(f.slots)
     };
     byName[f.name] = entry;
@@ -286,11 +293,11 @@
     var nm = nameFor(dist);
     if (byName[nm]) return; // already have a hand-authored version
     var slots = buildSlots(dist);
-    var defCount = dist.D + dist.DM;
     var entry = {
       name: nm,
       common: false,
-      defs: defCount,
+      defs: dist.D + dist.DM,   // rule-2 defenders (D + DM)
+      backline: dist.D,         // back line only, for grouping
       slots: [GK].concat(slots)
     };
     byName[nm] = entry;
@@ -304,7 +311,7 @@
     if (common.length) groups.push({ label: 'Common', formations: common });
 
     [3, 4, 5].forEach(function (d) {
-      var list = all.filter(function (f) { return !f.common && f.defs === d; });
+      var list = all.filter(function (f) { return !f.common && f.backline === d; });
       list.sort(function (a, b) { return a.name.localeCompare(b.name); });
       if (list.length) groups.push({ label: d + ' at the back', formations: list });
     });

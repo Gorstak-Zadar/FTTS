@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Football Tactics Test Sim</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=8" />
 </head>
 <body>
   <div id="errbar" style="display:none;background:#7f1d1d;color:#fecaca;padding:8px 14px;font:13px/1.4 system-ui;white-space:pre-wrap;"></div>
@@ -73,15 +73,15 @@
     <section class="panel" id="panelB"></section>
   </main>
 
-  <!-- Data + engine (order matters) -->
-  <script src="js/formations.js"></script>
-  <script src="js/roles.js"></script>
-  <script src="js/responsibilities.js"></script>
-  <script src="js/responsibilities-data2.js"></script>
-  <script src="js/engine.js"></script>
-  <script src="js/match.js"></script>
-  <script src="js/pitch.js"></script>
-  <script src="js/animator.js"></script>
-  <script src="js/app.js"></script>
+  <!-- Data + engine (order matters). ?v= is bumped each deploy to bust cache. -->
+  <script src="js/formations.js?v=8"></script>
+  <script src="js/roles.js?v=8"></script>
+  <script src="js/responsibilities.js?v=8"></script>
+  <script src="js/responsibilities-data2.js?v=8"></script>
+  <script src="js/engine.js?v=8"></script>
+  <script src="js/match.js?v=8"></script>
+  <script src="js/pitch.js?v=8"></script>
+  <script src="js/animator.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>
