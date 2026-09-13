@@ -20,12 +20,51 @@
     <section class="panel" id="panelA"></section>
 
     <section class="center">
+      <div class="scoreboard" id="scoreboard">
+        <div class="sb-team sb-a">
+          <span class="sb-name">Team A</span>
+          <span class="sb-eff" id="sb-eff-a">standard</span>
+        </div>
+        <div class="sb-score">
+          <span id="sb-score">0 – 0</span>
+          <span class="sb-clock" id="sb-clock">0'</span>
+        </div>
+        <div class="sb-team sb-b">
+          <span class="sb-name">Team B</span>
+          <span class="sb-eff" id="sb-eff-b">standard</span>
+        </div>
+      </div>
+
       <canvas id="pitch" width="620" height="820"></canvas>
+
+      <div class="match-controls">
+        <button id="btnPlay" class="btn btn-accent">▶ Play match</button>
+        <button id="btnPause" class="btn" disabled>⏸ Pause</button>
+        <button id="btnReset" class="btn" disabled>⟲ Reset</button>
+        <label class="speed">Speed
+          <select id="matchSpeed">
+            <option value="400">Slow</option>
+            <option value="150" selected>Normal</option>
+            <option value="40">Fast</option>
+            <option value="0">Instant</option>
+          </select>
+        </label>
+        <label class="seedwrap">Seed
+          <input type="number" id="matchSeed" placeholder="random" />
+        </label>
+      </div>
+
+      <div class="match-stats" id="match-stats"></div>
+      <div class="feed" id="feed"></div>
+
       <div id="timeline"></div>
       <p class="hint">
         Team A attacks right, Team B attacks left. Dots show position code,
         role (duty) and — per your guide's rule 8 tables — each player's
-        resolved responsibility for the chosen fluidity &amp; mentality.
+        resolved responsibility. Hit <strong>Play match</strong> to simulate
+        90 minutes: mentality shifts by phase (rule 6), attacks favour your
+        strong spot (rule 5), and rule 7 modifiers apply. The scoreline is a
+        heuristic on top of those guide-defined inputs; same seed = same match.
       </p>
     </section>
 
@@ -38,6 +77,7 @@
   <script src="js/responsibilities.js"></script>
   <script src="js/responsibilities-data2.js"></script>
   <script src="js/engine.js"></script>
+  <script src="js/match.js"></script>
   <script src="js/pitch.js"></script>
   <script src="js/app.js"></script>
 </body>

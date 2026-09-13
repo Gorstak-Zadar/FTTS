@@ -76,6 +76,58 @@
   });
   eq('formations>30', FORMATIONS.all.length > 30, true);
 
+  // ---- Match engine sanity ----
+  var MATCH = window.MATCH;
+  function buildTeam(formationName, fluidity, mentality, home) {
+    var slots = FORMATIONS.slotsOf(formationName);
+    return {
+      formationName: formationName, fluidity: fluidity, mentality: mentality, home: !!home,
+      players: slots.map(function (s) {
+        var rd = ROLES.defaultRoleDuty(s.pos);
+        return { pos: s.pos, lane: s.lane, band: s.band, role: rd.role, duty: rd.duty };
+      })
+    };
+  }
+  function analyse(t) { return ENGINE.analyseTeam(t, { sameAsOpponent: false, badWeather: false }); }
+
+  var tA = buildTeam('4-3-3', 'flexible', 'standard', true);
+  var tB = buildTeam('4-4-2', 'structured', 'counter', false);
+  var aA = analyse(tA), aB = analyse(tB);
+
+  // Determinism: same seed => identical result.
+  var m1 = MATCH.create(tA, tB, aA, aB, { seed: 12345 }).runToEnd();
+  var m2 = MATCH.create(tA, tB, aA, aB, { seed: 12345 }).runToEnd();
+  eq('match deterministic score', [m1.score.A, m1.score.B], [m2.score.A, m2.score.B]);
+  eq('match deterministic shots', [m1.shots.A, m1.shots.B], [m2.shots.A, m2.shots.B]);
+
+  // Different seed can differ but must finish at 90 with sane scores.
+  eq('match finishes at 90', m1.minute, 90);
+  eq('match finished flag', m1.finished, true);
+  eq('score A in range', m1.score.A >= 0 && m1.score.A <= 12, true);
+  eq('score B in range', m1.score.B >= 0 && m1.score.B <= 12, true);
+  eq('shots >= goals A', m1.shots.A >= m1.score.A, true);
+  eq('shots >= goals B', m1.shots.B >= m1.score.B, true);
+
+  // Directional: over many seeds, an attacking team should out-shoot the same
+  // team set to contain (rule 7g: attacking => more shots).
+  (function () {
+    function totalShots(mentality, seeds) {
+      var t = buildTeam('4-3-3', 'flexible', mentality, true);
+      var opp = buildTeam('4-4-2', 'flexible', 'standard', false);
+      var at = analyse(t), ao = analyse(opp);
+      var sum = 0;
+      for (var i = 0; i < seeds; i++) sum += MATCH.create(t, opp, at, ao, { seed: i * 7 + 1 }).runToEnd().shots.A;
+      return sum;
+    }
+    var attackingShots = totalShots('attacking', 30);
+    var containShots = totalShots('contain', 30);
+    eq('attacking out-shoots contain', attackingShots > containShots, true);
+  })();
+
+  // Effective mentality blend is within [chosen, phase] bounds and numeric.
+  var eff = MATCH._effectiveMentalityLevel('standard', 10);
+  eq('effective mentality numeric', typeof eff === 'number' && eff >= 0 && eff <= 6, true);
+
   var out = document.getElementById('selftest-out');
   var head = pass + ' passed, ' + fail + ' failed (' + FORMATIONS.all.length + ' formations).';
   out.innerHTML = '<h2 style="color:' + (fail ? '#e23a3a' : '#2fae60') + '">' + head + '</h2>' +

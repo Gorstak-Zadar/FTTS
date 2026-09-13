@@ -245,9 +245,114 @@
     if (hostA) { hostA.innerHTML = ''; hostA.appendChild(buildAnalysis(teamA, analA)); }
     if (hostB) { hostB.innerHTML = ''; hostB.appendChild(buildAnalysis(teamB, analB)); }
 
-    // Render pitch.
+    // Cache latest analyses for the match engine.
+    lastAnalA = analA;
+    lastAnalB = analB;
+
+    // If tactics changed while a match is idle/finished (not actively playing),
+    // drop the stale sim so the next Play rebuilds from the new settings.
+    if (!match.timer && match.sim) {
+      match.sim = null; match.snap = null;
+      var sc = document.getElementById('sb-score');
+      if (sc) { sc.textContent = '0 – 0'; document.getElementById('sb-clock').textContent = "0'"; }
+      var ms = document.getElementById('match-stats'); if (ms) ms.innerHTML = '';
+      var fd = document.getElementById('feed'); if (fd) fd.innerHTML = '';
+      setControls(false, false);
+    }
+
+    // Render pitch. If a match is running, sit the shape by effective mentality.
     var showResp = document.getElementById('toggleResp').checked;
-    PITCH.render(canvas, teamA, analA, teamB, analB, showResp);
+    var effA = match.snap ? match.snap.effective.A : null;
+    var effB = match.snap ? match.snap.effective.B : null;
+    PITCH.render(canvas, teamA, analA, teamB, analB, showResp, effA, effB);
+  }
+
+  // ==========================================================================
+  // Match simulation controls
+  // ==========================================================================
+  var match = { sim: null, timer: null, snap: null };
+  var lastAnalA = null, lastAnalB = null;
+
+  function fmtEvent(ev) {
+    var side = ev.side ? ('team-' + ev.side.toLowerCase()) : '';
+    var cls = 'ev ev-' + ev.type + ' ' + side;
+    return '<div class="' + cls + '"><span class="ev-min">' +
+      (ev.minute ? ev.minute + "'" : '') + '</span> ' + ev.text + '</div>';
+  }
+
+  function paintMatch() {
+    var s = match.snap;
+    if (!s) return;
+    document.getElementById('sb-score').textContent = s.score.A + ' – ' + s.score.B;
+    document.getElementById('sb-clock').textContent = s.minute + "'";
+    document.getElementById('sb-eff-a').textContent = s.effective.A;
+    document.getElementById('sb-eff-b').textContent = s.effective.B;
+
+    document.getElementById('match-stats').innerHTML =
+      '<span>Shots ' + s.shots.A + '–' + s.shots.B + '</span>' +
+      '<span>Cards ' + s.cards.A + '–' + s.cards.B + '</span>' +
+      '<span>Injuries ' + s.injuries.A + '–' + s.injuries.B + '</span>' +
+      (s.mirror ? '<span class="mirror">mirror match</span>' : '') +
+      '<span class="seed">seed ' + s.seed + '</span>';
+
+    var feed = document.getElementById('feed');
+    feed.innerHTML = s.lastEvents.slice().reverse().map(fmtEvent).join('');
+
+    // Re-lay the shape by the current effective mentality.
+    var showResp = document.getElementById('toggleResp').checked;
+    PITCH.render(canvas, teamA, lastAnalA, teamB, lastAnalB, showResp,
+      s.effective.A, s.effective.B);
+  }
+
+  function stopTimer() {
+    if (match.timer) { clearInterval(match.timer); match.timer = null; }
+  }
+
+  function setControls(running, finished) {
+    document.getElementById('btnPlay').disabled = running || finished;
+    document.getElementById('btnPause').disabled = !running;
+    document.getElementById('btnReset').disabled = !(running || finished || match.snap);
+  }
+
+  function startMatch() {
+    // Build a fresh sim from current configs/analyses.
+    var seedInput = document.getElementById('matchSeed').value;
+    var opts = { badWeather: options.badWeather };
+    if (seedInput !== '') opts.seed = parseInt(seedInput, 10) >>> 0;
+
+    if (!match.sim || match.snap && match.snap.finished) {
+      match.sim = MATCH.create(teamA, teamB, lastAnalA, lastAnalB, opts);
+      match.snap = match.sim.snapshot();
+    }
+    var speed = parseInt(document.getElementById('matchSpeed').value, 10);
+
+    if (speed === 0) {
+      match.snap = match.sim.runToEnd();
+      paintMatch();
+      setControls(false, true);
+      return;
+    }
+
+    setControls(true, false);
+    stopTimer();
+    match.timer = setInterval(function () {
+      match.snap = match.sim.stepMinute();
+      paintMatch();
+      if (match.snap.finished) { stopTimer(); setControls(false, true); }
+    }, speed);
+  }
+
+  function pauseMatch() { stopTimer(); setControls(false, false); }
+
+  function resetMatch() {
+    stopTimer();
+    match.sim = null; match.snap = null;
+    document.getElementById('sb-score').textContent = '0 – 0';
+    document.getElementById('sb-clock').textContent = "0'";
+    document.getElementById('match-stats').innerHTML = '';
+    document.getElementById('feed').innerHTML = '';
+    setControls(false, false);
+    refresh(false);
   }
 
   // ---- Init ------------------------------------------------------------------
@@ -261,6 +366,15 @@
     });
     document.getElementById('toggleResp').addEventListener('change', function () {
       refresh(false);
+    });
+
+    // Match controls.
+    document.getElementById('btnPlay').addEventListener('click', startMatch);
+    document.getElementById('btnPause').addEventListener('click', pauseMatch);
+    document.getElementById('btnReset').addEventListener('click', resetMatch);
+    document.getElementById('matchSpeed').addEventListener('change', function () {
+      // If playing, apply the new speed immediately.
+      if (match.timer) { pauseMatch(); startMatch(); }
     });
 
     // Mentality timeline (shared, rule 6).

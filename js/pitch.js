@@ -82,8 +82,10 @@
 
   // Compute on-canvas positions for a team.
   // teamSide: 'A' (attacks right) or 'B' (attacks left).
-  function layout(cfg, analysis, teamSide, W, H, margin) {
-    var push = MENT_PUSH[cfg.mentality] || 0;
+  function layout(cfg, analysis, teamSide, W, H, margin, mentalityOverride) {
+    // During a match, the shape sits according to the CURRENT effective
+    // mentality (rule 6 blended), passed in as mentalityOverride.
+    var push = MENT_PUSH[mentalityOverride || cfg.mentality] || 0;
     var bias = SPOT_BIAS[analysis.spot.horizontalStrong] || 0;
     var pw = W - margin * 2;
     var ph = H - margin * 2;
@@ -190,15 +192,15 @@
     }
   }
 
-  function render(canvas, teamA, analA, teamB, analB, showResp) {
+  function render(canvas, teamA, analA, teamB, analB, showResp, effA, effB) {
     var ctx = canvas.getContext('2d');
     var W = canvas.width, H = canvas.height;
     var margin = 28;
 
     drawPitch(ctx, W, H, margin);
 
-    var aPlayers = layout(teamA, analA, 'A', W, H, margin);
-    var bPlayers = layout(teamB, analB, 'B', W, H, margin);
+    var aPlayers = layout(teamA, analA, 'A', W, H, margin, effA);
+    var bPlayers = layout(teamB, analB, 'B', W, H, margin, effB);
 
     aPlayers.forEach(function (pl) { drawPlayer(ctx, pl, '#3b82f6', showResp); });
     bPlayers.forEach(function (pl) { drawPlayer(ctx, pl, '#ef4444', showResp); });
