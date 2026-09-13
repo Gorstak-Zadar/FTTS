@@ -134,6 +134,8 @@ select:focus { border-color: var(--accent); }
 }
 .alabel { color: var(--text-dim); }
 .avalue { color: var(--text); text-align: right; font-weight: 600; }
+.aline.ok .avalue { color: var(--good); }
+.aline.warnrow .avalue { color: var(--caution); }
 
 .advisory {
   font-size: 0.78rem;

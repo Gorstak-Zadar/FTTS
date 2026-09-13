@@ -164,6 +164,14 @@
     box.appendChild(line('Weak spot',
       analysis.spot.horizontalWeak + ' / ' + analysis.spot.verticalWeak));
 
+    // Striker-role guidance line (shows count + whether current picks match).
+    if (analysis.strikerGuidance && analysis.strikerGuidance.count > 0) {
+      var sg = analysis.strikerGuidance;
+      box.appendChild(line('Strikers (' + sg.count + ')',
+        sg.satisfied ? '✓ roles match' : '⚠ see advisory',
+        sg.satisfied ? 'ok' : 'warnrow'));
+    }
+
     if (analysis.advisories.length) {
       box.appendChild(el('div', { class: 'sub', text: 'Advisories' }));
       analysis.advisories.forEach(function (a) {

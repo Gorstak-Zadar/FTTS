@@ -128,6 +128,27 @@
   var eff = MATCH._effectiveMentalityLevel('standard', 10);
   eq('effective mentality numeric', typeof eff === 'number' && eff >= 0 && eff <= 6, true);
 
+  // ---- Striker guidance (advisory) ----
+  function ST(role, duty, lane) { return { pos: 'ST', band: 'ST', lane: lane || 'C', role: role, duty: duty }; }
+  var SG = ENGINE.strikerGuidance;
+  // 0 strikers => satisfied, no recommendation.
+  eq('sg 0', SG([]).satisfied, true);
+  // 1 striker: DLF/TF on Attack satisfies; anything else does not.
+  eq('sg 1 DLF-A ok', SG([ST('Deep Lying Forward', 'Attack')]).satisfied, true);
+  eq('sg 1 TF-A ok', SG([ST('Target Forward', 'Attack')]).satisfied, true);
+  eq('sg 1 Poacher not', SG([ST('Poacher', 'Attack')]).satisfied, false);
+  eq('sg 1 DLF-S not', SG([ST('Deep Lying Forward', 'Support')]).satisfied, false);
+  eq('sg 1 count', SG([ST('Poacher', 'Attack')]).count, 1);
+  // 2 strikers: executioner + creator.
+  eq('sg 2 ok', SG([ST('Poacher', 'Attack', 'CL'), ST('Target Forward', 'Support', 'CR')]).satisfied, true);
+  eq('sg 2 AF+DLF ok', SG([ST('Advanced Forward', 'Attack', 'CL'), ST('Deep Lying Forward', 'Support', 'CR')]).satisfied, true);
+  eq('sg 2 both attack not', SG([ST('Poacher', 'Attack', 'CL'), ST('Advanced Forward', 'Attack', 'CR')]).satisfied, false);
+  eq('sg 2 no exec not', SG([ST('Target Forward', 'Support', 'CL'), ST('Deep Lying Forward', 'Support', 'CR')]).satisfied, false);
+  // 3 strikers: middle executioner (Attack), flanks support.
+  eq('sg 3 ok', SG([ST('Deep Lying Forward', 'Support', 'L'), ST('Poacher', 'Attack', 'C'), ST('Target Forward', 'Support', 'R')]).satisfied, true);
+  eq('sg 3 mid support not', SG([ST('Deep Lying Forward', 'Support', 'L'), ST('Deep Lying Forward', 'Support', 'C'), ST('Target Forward', 'Support', 'R')]).satisfied, false);
+  eq('sg 3 flank attack not', SG([ST('Poacher', 'Attack', 'L'), ST('Poacher', 'Attack', 'C'), ST('Target Forward', 'Support', 'R')]).satisfied, false);
+
   var out = document.getElementById('selftest-out');
   var head = pass + ' passed, ' + fail + ' failed (' + FORMATIONS.all.length + ' formations).';
   out.innerHTML = '<h2 style="color:' + (fail ? '#e23a3a' : '#2fae60') + '">' + head + '</h2>' +
