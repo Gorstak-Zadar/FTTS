@@ -8,10 +8,20 @@
 (function (global) {
   'use strict';
 
+  // Surface any error on-page so failures are never silent.
+  function showErr(msg) {
+    var bar = document.getElementById('errbar');
+    if (bar) { bar.style.display = 'block'; bar.textContent = 'Error: ' + msg; }
+  }
+  global.addEventListener('error', function (e) {
+    showErr((e.message || 'unknown') + (e.filename ? ' @ ' + e.filename + ':' + e.lineno : ''));
+  });
+
   var F = global.FORMATIONS;
   var R = global.ROLES;
   var E = global.ENGINE;
   var PITCH = global.PITCH;
+  var MATCH = global.MATCH;
 
   // Team state.
   function makeTeam(defaultFormation, home) {
@@ -315,31 +325,39 @@
   }
 
   function startMatch() {
-    // Build a fresh sim from current configs/analyses.
-    var seedInput = document.getElementById('matchSeed').value;
-    var opts = { badWeather: options.badWeather };
-    if (seedInput !== '') opts.seed = parseInt(seedInput, 10) >>> 0;
+    try {
+      if (!MATCH) { showErr('MATCH engine not loaded (js/match.js).'); return; }
+      if (!lastAnalA || !lastAnalB) { refresh(false); }
+      // Build a fresh sim from current configs/analyses.
+      var seedInput = document.getElementById('matchSeed').value;
+      var opts = { badWeather: options.badWeather };
+      if (seedInput !== '') opts.seed = parseInt(seedInput, 10) >>> 0;
 
-    if (!match.sim || match.snap && match.snap.finished) {
-      match.sim = MATCH.create(teamA, teamB, lastAnalA, lastAnalB, opts);
-      match.snap = match.sim.snapshot();
+      if (!match.sim || (match.snap && match.snap.finished)) {
+        match.sim = MATCH.create(teamA, teamB, lastAnalA, lastAnalB, opts);
+        match.snap = match.sim.snapshot();
+      }
+      var speed = parseInt(document.getElementById('matchSpeed').value, 10);
+
+      if (speed === 0) {
+        match.snap = match.sim.runToEnd();
+        paintMatch();
+        setControls(false, true);
+        return;
+      }
+
+      setControls(true, false);
+      stopTimer();
+      match.timer = setInterval(function () {
+        try {
+          match.snap = match.sim.stepMinute();
+          paintMatch();
+          if (match.snap.finished) { stopTimer(); setControls(false, true); }
+        } catch (err) { stopTimer(); showErr('step: ' + (err && err.message)); }
+      }, speed);
+    } catch (err) {
+      showErr('startMatch: ' + (err && err.message ? err.message : err));
     }
-    var speed = parseInt(document.getElementById('matchSpeed').value, 10);
-
-    if (speed === 0) {
-      match.snap = match.sim.runToEnd();
-      paintMatch();
-      setControls(false, true);
-      return;
-    }
-
-    setControls(true, false);
-    stopTimer();
-    match.timer = setInterval(function () {
-      match.snap = match.sim.stepMinute();
-      paintMatch();
-      if (match.snap.finished) { stopTimer(); setControls(false, true); }
-    }, speed);
   }
 
   function pauseMatch() { stopTimer(); setControls(false, false); }
