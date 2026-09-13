@@ -93,7 +93,10 @@
     return cfg.players.map(function (p, idx) {
       var depth = (BAND_DEPTH[p.band] != null ? BAND_DEPTH[p.band] : 0.5);
       if (p.pos !== 'GK') depth = clamp(depth + push, 0.06, 0.94);
-      var laneY = (LANE_Y[p.lane] != null ? LANE_Y[p.lane] : 0.5) + bias;
+      var laneY = (LANE_Y[p.lane] != null ? LANE_Y[p.lane] : 0.5);
+      // Strikers stay central: compress the ST band toward the middle.
+      if (p.band === 'ST') laneY = 0.5 + (laneY - 0.5) * 0.42;
+      laneY = laneY + bias;
       laneY = clamp(laneY, 0.06, 0.94);
 
       var x, y;

@@ -129,6 +129,37 @@
         S('MC','M','CL'), S('MC','M','C'), S('MC','M','CR'),
         S('ST','ST','CL'), S('ST','ST','CR')
       ]
+    },
+    {
+      // Narrow 4-3-3: three CENTRAL strikers (no wingers) + three central mids.
+      // Attackers (rule 1) = 3 (all ST). Triggers 3-striker guidance.
+      name: '4-3-3 Narrow', common: true,
+      slots: [
+        S('DL','D','L'), S('DC','D','CL'), S('DC','D','CR'), S('DR','D','R'),
+        S('MC','M','L'), S('MC','M','C'), S('MC','M','R'),
+        S('ST','ST','L'), S('ST','ST','C'), S('ST','ST','R')
+      ]
+    },
+    {
+      // Narrow midfield diamond 4-4-2: DM + 2 MC + AMC, two central strikers,
+      // no wide players. Attackers (rule 1) = AMC + 2 ST = 3.
+      name: '4-4-2 Diamond (narrow)', common: true,
+      slots: [
+        S('DL','D','L'), S('DC','D','CL'), S('DC','D','CR'), S('DR','D','R'),
+        S('DM','DM','C'), S('MC','M','CL'), S('MC','M','CR'), S('AMC','AM','C'),
+        S('ST','ST','CL'), S('ST','ST','CR')
+      ]
+    },
+    {
+      // Narrow 4-3-1-2: three central mids, an AMC, and two central strikers.
+      // Attackers (rule 1) = AMC + 2 ST = 3.
+      name: '4-3-1-2 Narrow', common: true,
+      slots: [
+        S('DL','D','L'), S('DC','D','CL'), S('DC','D','CR'), S('DR','D','R'),
+        S('MC','M','L'), S('MC','M','C'), S('MC','M','R'),
+        S('AMC','AM','C'),
+        S('ST','ST','CL'), S('ST','ST','CR')
+      ]
     }
   ];
 

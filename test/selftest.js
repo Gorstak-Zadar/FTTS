@@ -76,6 +76,17 @@
   });
   eq('formations>30', FORMATIONS.all.length > 30, true);
 
+  // Narrow formations present with the right counts.
+  eq('has 4-3-3 Narrow', names.indexOf('4-3-3 Narrow') !== -1, true);
+  (function () {
+    var s = FORMATIONS.byName['4-3-3 Narrow'].slots;
+    eq('433narrow slots', s.length, 11);
+    eq('433narrow attackers', s.filter(ROLES.isAttackerSlot).length, 3); // 3 ST
+    eq('433narrow defenders', s.filter(ROLES.isDefenderSlot).length, 4); // back 4
+    eq('433narrow strikers', s.filter(function (p) { return p.pos === 'ST'; }).length, 3);
+  })();
+  eq('has diamond', names.indexOf('4-4-2 Diamond (narrow)') !== -1, true);
+
   // ---- Match engine sanity ----
   var MATCH = window.MATCH;
   function buildTeam(formationName, fluidity, mentality, home) {

@@ -43,6 +43,9 @@
     return team.players.map(function (p) {
       var depth = BAND_DEPTH[p.band] != null ? BAND_DEPTH[p.band] : 0.5;   // 0..1 forwardness
       var laneY = LANE_Y[p.lane] != null ? LANE_Y[p.lane] : 0.5;
+      // Strikers are central by nature: compress the ST band toward the middle
+      // so "narrow" fronts (e.g. three central STs) don't hug the touchline.
+      if (p.band === 'ST') laneY = 0.5 + (laneY - 0.5) * 0.42;
       // Map forwardness to x based on side.
       var x = side === 'A' ? depth : (1 - depth);
       var y = side === 'A' ? laneY : (1 - laneY);
