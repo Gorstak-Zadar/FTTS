@@ -64,8 +64,11 @@
       ]
     },
     {
-      // Deep variant: the double pivot are dedicated DMs. Defenders (rule 2) = 6.
-      name: '4-2-3-1 DM', common: true,
+      // "Deep" variant: the double pivot are dedicated DMs. Since DM counts as a
+      // defender (rule 2), this is a 6-DEFENDER shape (back 4 + 2 DM). This
+      // matches the FM "4-2-3-1 DM" convention where the pivot sits in the DM
+      // strata; here named "Deep" per the user's convention.
+      name: '4-2-3-1 Deep', common: true,
       slots: [
         S('DL','D','L'), S('DC','D','CL'), S('DC','D','CR'), S('DR','D','R'),
         S('DM','DM','CL'), S('DM','DM','CR'),
@@ -82,7 +85,9 @@
       ]
     },
     {
-      name: '4-3-3 (DM)', common: true,
+      // "Deep" 4-3-3: single pivot (DM) behind two central mids. DM counts as a
+      // defender -> 5 defenders (back 4 + 1 DM).
+      name: '4-3-3 Deep', common: true,
       slots: [
         S('DL','D','L'), S('DC','D','CL'), S('DC','D','CR'), S('DR','D','R'),
         S('DM','DM','C'), S('MC','M','CL'), S('MC','M','CR'),
@@ -107,7 +112,30 @@
       ]
     },
     {
+      // TRUE 3-5-2: three centre-backs and a midfield FIVE made of two wide
+      // midfielders (ML/MR) + three central mids. No wing-backs/DM, so this is
+      // a genuine 3-DEFENDER shape under the rules (defenders = CB/FB/WB/DM).
       name: '3-5-2', common: true,
+      slots: [
+        S('DC','D','L'), S('DC','D','C'), S('DC','D','R'),
+        S('ML','M','L'), S('MC','M','CL'), S('MC','M','C'), S('MC','M','CR'), S('MR','M','R'),
+        S('ST','ST','CL'), S('ST','ST','CR')
+      ]
+    },
+    {
+      // TRUE 3-4-3: three centre-backs, a midfield four of two wide mids + two
+      // central mids, and a front three. 3 defenders.
+      name: '3-4-3', common: true,
+      slots: [
+        S('DC','D','L'), S('DC','D','C'), S('DC','D','R'),
+        S('ML','M','L'), S('MC','M','CL'), S('MC','M','CR'), S('MR','M','R'),
+        S('AML','AM','L'), S('ST','ST','C'), S('AMR','AM','R')
+      ]
+    },
+    {
+      // Wing-back variant of the 3-5-2. Because WBs count as defenders, this is
+      // really a 5-defender shape -> named honestly as 5-3-2 (WB).
+      name: '5-3-2 (WB)', common: true,
       slots: [
         S('DC','D','L'), S('DC','D','C'), S('DC','D','R'),
         S('WBL','DM','L'), S('MC','M','CL'), S('MC','M','C'), S('MC','M','CR'), S('WBR','DM','R'),
@@ -115,17 +143,10 @@
       ]
     },
     {
-      name: '3-4-3', common: true,
-      slots: [
-        S('DC','D','L'), S('DC','D','C'), S('DC','D','R'),
-        S('WBL','DM','L'), S('MC','M','CL'), S('MC','M','CR'), S('WBR','DM','R'),
-        S('AML','AM','L'), S('ST','ST','C'), S('AMR','AM','R')
-      ]
-    },
-    {
+      // Flat-back-five 5-3-2: two full-backs in the back line + three CBs.
       name: '5-3-2', common: true,
       slots: [
-        S('WBL','D','L'), S('DC','D','CL'), S('DC','D','C'), S('DC','D','CR'), S('WBR','D','R'),
+        S('DL','D','L'), S('DC','D','CL'), S('DC','D','C'), S('DC','D','CR'), S('DR','D','R'),
         S('MC','M','CL'), S('MC','M','C'), S('MC','M','CR'),
         S('ST','ST','CL'), S('ST','ST','CR')
       ]
@@ -141,24 +162,77 @@
       ]
     },
     {
-      // Narrow midfield diamond 4-4-2: DM + 2 MC + AMC, two central strikers,
-      // no wide players. Attackers (rule 1) = AMC + 2 ST = 3.
-      name: '4-4-2 Diamond (narrow)', common: true,
+      // 4-4-2 Diamond (a.k.a. 4-1-2-1-2): back four, a midfield DIAMOND of a DM
+      // base + two central mids as the sides + an AMC at the tip, and two
+      // strikers. DM counts as a defender -> 5 defenders.
+      name: '4-4-2 Diamond', common: true,
       slots: [
         S('DL','D','L'), S('DC','D','CL'), S('DC','D','CR'), S('DR','D','R'),
-        S('DM','DM','C'), S('MC','M','CL'), S('MC','M','CR'), S('AMC','AM','C'),
+        S('DM','DM','C'),
+        S('MC','M','L'), S('MC','M','R'),
+        S('AMC','AM','C'),
         S('ST','ST','CL'), S('ST','ST','CR')
       ]
     },
     {
-      // Narrow 4-3-1-2: three central mids, an AMC, and two central strikers.
-      // Attackers (rule 1) = AMC + 2 ST = 3.
-      name: '4-3-1-2 Narrow', common: true,
+      // 4-3-1-2: back four, flat midfield three, an AMC and two strikers. No DM,
+      // so 4 defenders (contrast with the diamond, which bases on a DM).
+      name: '4-3-1-2', common: true,
       slots: [
         S('DL','D','L'), S('DC','D','CL'), S('DC','D','CR'), S('DR','D','R'),
         S('MC','M','L'), S('MC','M','C'), S('MC','M','R'),
         S('AMC','AM','C'),
         S('ST','ST','CL'), S('ST','ST','CR')
+      ]
+    },
+    {
+      // 4-3-2-1 "Christmas tree": back four, midfield three, two AMCs, lone ST.
+      name: '4-3-2-1', common: true,
+      slots: [
+        S('DL','D','L'), S('DC','D','CL'), S('DC','D','CR'), S('DR','D','R'),
+        S('MC','M','L'), S('MC','M','C'), S('MC','M','R'),
+        S('AMC','AM','CL'), S('AMC','AM','CR'),
+        S('ST','ST','C')
+      ]
+    },
+    {
+      // 4-2-2-2: back four, double pivot (2 DM), two AMs and two strikers.
+      // 2 DM -> 6 defenders.
+      name: '4-2-2-2 Deep', common: true,
+      slots: [
+        S('DL','D','L'), S('DC','D','CL'), S('DC','D','CR'), S('DR','D','R'),
+        S('DM','DM','CL'), S('DM','DM','CR'),
+        S('AML','AM','L'), S('AMR','AM','R'),
+        S('ST','ST','CL'), S('ST','ST','CR')
+      ]
+    },
+    {
+      // 5-2-1-2: back five (2 WB + 3 CB), two central mids, an AMC, two strikers.
+      // WBs count as defenders -> 5 defenders.
+      name: '5-2-1-2 (WB)', common: true,
+      slots: [
+        S('WBL','D','L'), S('DC','D','CL'), S('DC','D','C'), S('DC','D','CR'), S('WBR','D','R'),
+        S('MC','M','CL'), S('MC','M','CR'),
+        S('AMC','AM','C'),
+        S('ST','ST','CL'), S('ST','ST','CR')
+      ]
+    },
+    {
+      // 5-2-3: back five (2 WB + 3 CB), two central mids, front three.
+      name: '5-2-3 (WB)', common: true,
+      slots: [
+        S('WBL','D','L'), S('DC','D','CL'), S('DC','D','C'), S('DC','D','CR'), S('WBR','D','R'),
+        S('MC','M','CL'), S('MC','M','CR'),
+        S('AML','AM','L'), S('ST','ST','C'), S('AMR','AM','R')
+      ]
+    },
+    {
+      // 5-4-1: back five, flat midfield four, lone striker (deep, defensive).
+      name: '5-4-1', common: true,
+      slots: [
+        S('WBL','D','L'), S('DC','D','CL'), S('DC','D','C'), S('DC','D','CR'), S('WBR','D','R'),
+        S('ML','M','L'), S('MC','M','CL'), S('MC','M','CR'), S('MR','M','R'),
+        S('ST','ST','C')
       ]
     }
   ];
