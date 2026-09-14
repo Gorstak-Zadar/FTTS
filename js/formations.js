@@ -234,109 +234,46 @@
         S('ML','M','L'), S('MC','M','CL'), S('MC','M','CR'), S('MR','M','R'),
         S('ST','ST','C')
       ]
+    },
+    {
+      // 4-5-1 flat: back four, flat midfield five (2 wide + 3 central), lone ST.
+      name: '4-5-1', common: true,
+      slots: [
+        S('DL','D','L'), S('DC','D','CL'), S('DC','D','CR'), S('DR','D','R'),
+        S('ML','M','L'), S('MC','M','CL'), S('MC','M','C'), S('MC','M','CR'), S('MR','M','R'),
+        S('ST','ST','C')
+      ]
+    },
+    {
+      // 3-4-2-1: three centre-backs, two wide mids + two central mids, two AMCs
+      // behind a lone striker. Wide players are wide mids -> 3 defenders.
+      name: '3-4-2-1', common: true,
+      slots: [
+        S('DC','D','L'), S('DC','D','C'), S('DC','D','R'),
+        S('ML','M','L'), S('MC','M','CL'), S('MC','M','CR'), S('MR','M','R'),
+        S('AMC','AM','CL'), S('AMC','AM','CR'),
+        S('ST','ST','C')
+      ]
+    },
+    {
+      // 3-1-4-2: three centre-backs, a DM, flat midfield four, two strikers.
+      // DM counts as a defender -> 4 defenders.
+      name: '3-1-4-2', common: true,
+      slots: [
+        S('DC','D','L'), S('DC','D','C'), S('DC','D','R'),
+        S('DM','DM','C'),
+        S('ML','M','L'), S('MC','M','CL'), S('MC','M','CR'), S('MR','M','R'),
+        S('ST','ST','CL'), S('ST','ST','CR')
+      ]
     }
   ];
 
-  /* ----- Extended catalogue: generated realistic formations by defender count.
-   * We enumerate plausible partitions of the 10 outfield players across the
-   * bands D / DM / M / AM / ST with sensible constraints, then convert each to
-   * concrete slots with left/right symmetry. Duplicates of the common set are
-   * skipped by name.
-   * ------------------------------------------------------------------------*/
+  /* The formation catalogue is a CURATED set of real-world formations only
+   * (defined in RAW above). We no longer mechanically generate every numeric
+   * partition — those produced non-football shapes. Every formation here is a
+   * recognised one whose defender count is consistent with the rules
+   * (defenders = CB/FB/WB/DM). */
 
-  // Assign lanes for `n` players in a band, spreading them across the width.
-  function lanesFor(n) {
-    switch (n) {
-      case 0: return [];
-      case 1: return ['C'];
-      case 2: return ['CL', 'CR'];
-      case 3: return ['L', 'C', 'R'];
-      case 4: return ['L', 'CL', 'CR', 'R'];
-      case 5: return ['L', 'CL', 'C', 'CR', 'R'];
-      default: {
-        var out = [];
-        for (var i = 0; i < n; i++) out.push('C');
-        return out;
-      }
-    }
-  }
-
-  // Pick a position code for a slot given its band and lane.
-  function posFor(band, lane, defCount) {
-    switch (band) {
-      case 'D':
-        if (lane === 'L') return defCount >= 5 ? 'WBL' : 'DL';
-        if (lane === 'R') return defCount >= 5 ? 'WBR' : 'DR';
-        return 'DC';
-      case 'DM':
-        if (lane === 'L') return 'WBL';
-        if (lane === 'R') return 'WBR';
-        return 'DM';
-      case 'M':
-        if (lane === 'L') return 'ML';
-        if (lane === 'R') return 'MR';
-        return 'MC';
-      case 'AM':
-        if (lane === 'L') return 'AML';
-        if (lane === 'R') return 'AMR';
-        return 'AMC';
-      case 'ST':
-        return 'ST';
-      default:
-        return 'MC';
-    }
-  }
-
-  function buildSlots(dist) {
-    // dist = { D, DM, M, AM, ST }
-    var defCount = dist.D + dist.DM; // wing-backs/DM count toward defenders
-    var slots = [];
-    ['D', 'DM', 'M', 'AM', 'ST'].forEach(function (band) {
-      var n = dist[band] || 0;
-      lanesFor(n).forEach(function (lane) {
-        slots.push(S(posFor(band, lane, dist.D), band, lane));
-      });
-    });
-    return slots;
-  }
-
-  function nameFor(dist) {
-    // Standard notation: defenders - (dm) - mids - (am) - strikers,
-    // collapsing empty middle bands sensibly.
-    var parts = [dist.D];
-    if (dist.DM) parts.push(dist.DM);
-    if (dist.M) parts.push(dist.M);
-    if (dist.AM) parts.push(dist.AM);
-    parts.push(dist.ST);
-    return parts.join('-');
-  }
-
-  // Enumerate realistic distributions.
-  function enumerate() {
-    var result = [];
-    for (var D = 3; D <= 5; D++) {
-      for (var DM = 0; DM <= 3; DM++) {
-        for (var M = 0; M <= 5; M++) {
-          for (var AM = 0; AM <= 3; AM++) {
-            var ST = 10 - D - DM - M - AM;
-            if (ST < 0 || ST > 3) continue;
-            // Plausibility constraints:
-            if (D + DM < 3) continue;             // need a back structure
-            var midTotal = DM + M + AM;
-            if (midTotal < 1) continue;           // need at least some midfield
-            if (midTotal > 6) continue;           // avoid absurd midfields
-            if (AM > 0 && M === 0 && DM === 0 && ST === 0) continue;
-            // Avoid all-attackers with no support
-            if (ST + AM > 4) continue;
-            result.push({ D: D, DM: DM, M: M, AM: AM, ST: ST });
-          }
-        }
-      }
-    }
-    return result;
-  }
-
-  // Build the full catalogue.
   var byName = {};
   var all = [];
 
@@ -362,33 +299,33 @@
     all.push(entry);
   });
 
-  // Add generated formations (skip name collisions with common set).
-  enumerate().forEach(function (dist) {
-    var nm = nameFor(dist);
-    if (byName[nm]) return; // already have a hand-authored version
-    var slots = buildSlots(dist);
-    var entry = {
-      name: nm,
-      common: false,
-      defs: dist.D + dist.DM,   // rule-2 defenders (D + DM)
-      backline: dist.D,         // back line only, for grouping
-      slots: [GK].concat(slots)
-    };
-    byName[nm] = entry;
-    all.push(entry);
-  });
-
-  // Grouping for the UI: Common first, then by defender count.
+  // Grouping for the UI: a single "Common" group plus back-line groups if any
+  // non-common formations are ever added later. With the curated set, all
+  // formations are common, so the dropdown shows one clean, grouped list
+  // ordered by back-line count then name.
   function grouped() {
-    var groups = [];
-    var common = all.filter(function (f) { return f.common; });
-    if (common.length) groups.push({ label: 'Common', formations: common });
-
-    [3, 4, 5].forEach(function (d) {
-      var list = all.filter(function (f) { return !f.common && f.backline === d; });
-      list.sort(function (a, b) { return a.name.localeCompare(b.name); });
-      if (list.length) groups.push({ label: d + ' at the back', formations: list });
+    // Group by RULE-2 DEFENDER COUNT (CB/FB/WB/DM), since that is what drives
+    // fluidity in this system. So a "5-3-2 (WB)" sits with the 5-defender
+    // shapes even though its back LINE is three centre-backs.
+    var buckets = {};
+    all.forEach(function (f) {
+      (buckets[f.defs] = buckets[f.defs] || []).push(f);
     });
+    var labels = {
+      3: '3 defenders (very fluid)',
+      4: '4 defenders (fluid)',
+      5: '5 defenders (flexible)',
+      6: '6 defenders (structured)',
+      7: '7 defenders (highly structured)'
+    };
+    var groups = [];
+    Object.keys(buckets).map(Number).sort(function (a, b) { return a - b; })
+      .forEach(function (d) {
+        var list = buckets[d].slice().sort(function (a, b) {
+          return a.name.localeCompare(b.name);
+        });
+        groups.push({ label: labels[d] || (d + ' defenders'), formations: list });
+      });
     return groups;
   }
 

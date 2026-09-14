@@ -74,9 +74,11 @@
     if (f.slots.length !== 11) { fail++; log.push('FAIL slots!=11: ' + f.name); }
     if (f.slots[0].pos !== 'GK') { fail++; log.push('FAIL no GK: ' + f.name); }
   });
-  eq('formations>30', FORMATIONS.all.length > 30, true);
+  // Curated set: every formation has 11 players and a GK (checked above); we
+  // expect a sane curated count (not the old mechanically-generated hundreds).
+  eq('curated count in range', FORMATIONS.all.length >= 18 && FORMATIONS.all.length <= 40, true);
 
-  // Narrow formations present with the right counts.
+  // Narrow 4-3-3: three central strikers.
   eq('has 4-3-3 Narrow', names.indexOf('4-3-3 Narrow') !== -1, true);
   (function () {
     var s = FORMATIONS.byName['4-3-3 Narrow'].slots;
@@ -85,7 +87,20 @@
     eq('433narrow defenders', s.filter(ROLES.isDefenderSlot).length, 4); // back 4
     eq('433narrow strikers', s.filter(function (p) { return p.pos === 'ST'; }).length, 3);
   })();
-  eq('has diamond', names.indexOf('4-4-2 Diamond (narrow)') !== -1, true);
+
+  // Corrected formations consistent with the defender rule.
+  function defOf(n) { return FORMATIONS.byName[n].slots.filter(ROLES.isDefenderSlot).length; }
+  eq('has 4-4-2 Diamond', names.indexOf('4-4-2 Diamond') !== -1, true);
+  eq('diamond has DM base (5 def)', defOf('4-4-2 Diamond'), 5);
+  eq('true 3-5-2 = 3 def', defOf('3-5-2'), 3);
+  eq('true 3-4-3 = 3 def', defOf('3-4-3'), 3);
+  eq('5-3-2 WB = 5 def', defOf('5-3-2 (WB)'), 5);
+  eq('4-2-3-1 Deep = 6 def', defOf('4-2-3-1 Deep'), 6);
+  eq('4-2-2-2 Deep = 6 def', defOf('4-2-2-2 Deep'), 6);
+  eq('has 4-3-2-1', names.indexOf('4-3-2-1') !== -1, true);
+  eq('has 4-5-1', names.indexOf('4-5-1') !== -1, true);
+  eq('has 3-4-2-1', names.indexOf('3-4-2-1') !== -1, true);
+  eq('has 3-1-4-2', names.indexOf('3-1-4-2') !== -1, true);
 
   // ---- Match engine sanity ----
   var MATCH = window.MATCH;
